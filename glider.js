@@ -5,7 +5,7 @@
   \___//_//_/ \_,_/ \__//_/  (_)__/ //___/
                               |___/
 
-  Version: 1.7.4
+  Version: forked
   Author: Nick Piscitelli (pickykneee)
   Website: https://nickpiscitelli.com
   Documentation: http://nickpiscitelli.github.io/Glider.js
@@ -39,8 +39,6 @@
     // expose glider object to its DOM element
     _.ele._glider = _
 
-    //setup direction for rtl
-
     // merge user setting with defaults
     _.opt = Object.assign(
       {},
@@ -48,6 +46,7 @@
         slidesToScroll: 1,
         slidesToShow: 1,
         resizeLock: true,
+        labelDots: false,
         duration: 0.5,
         dir: (_window.getComputedStyle(_.ele).direction === 'rtl') ? -1:1,
         // easeInQuad
@@ -57,6 +56,7 @@
       },
       settings
     )
+    if(Math.abs(_.opt.dir) != 1) _.opt.dir = 1;
 
     // set defaults
     _.animate_id = _.page = _.slide = _.scrollLeft = 0
@@ -210,12 +210,17 @@
 
     _.dots.innerHTML = ''
     _.dots.classList.add('glider-dots')
+    if(false !== _.opt.labelDots) _.dots.classList.add('label-dots')
 
     for (var i = 0; i < Math.ceil(_.slides.length / _.opt.slidesToShow); ++i) {
       var dot = document.createElement('button')
       dot.dataset.index = i
       dot.setAttribute('aria-label', 'Page ' + (i + 1))
       dot.className = 'glider-dot ' + (i ? '' : 'active')
+      if(false !== _.opt.labelDots){
+        if(_.opt.labelDots[i]) dot.innerText = _.opt.labelDots[i]
+        else dot.innerText = (i+1)
+      }
       _.event(dot, 'add', {
         click: _.scrollItem.bind(_, i, true)
       })
@@ -269,14 +274,14 @@
       if (_.arrows.next) {
         _.arrows.next.classList.toggle(
           'disabled',
-          Math.ceil(_.scrollLeft + _.containerWidth) >=
+          Math.ceil(_.opt.dir * _.ele.scrollLeft + _.containerWidth) >=
             Math.floor(_.trackWidth) || disableArrows
         )
       }
     }
 
-    _.slide = Math.round(_.scrollLeft / _.itemWidth)
-    _.page = Math.round(_.scrollLeft / _.containerWidth)
+    _.slide = Math.round(_.opt.dir * _.ele.scrollLeft / _.itemWidth)
+    _.page = Math.round(_.opt.dir * _.ele.scrollLeft / _.containerWidth)
 
     var middle = _.slide + Math.floor(Math.floor(_.opt.slidesToShow) / 2)
 
@@ -287,7 +292,7 @@
 
     // the last page may be less than one half of a normal page width so
     // the page is rounded down. when at the end, force the page to turn
-    if (_.scrollLeft + _.containerWidth >= Math.floor(_.trackWidth)) {
+    if ( (_.opt.dir * _.ele.scrollLeft + _.containerWidth) >= Math.floor(_.trackWidth)) {
       _.page = _.dots ? _.dots.children.length - 1 : 0
     }
 
@@ -296,9 +301,9 @@
 
       var wasVisible = slideClasses.contains('visible')
 
-      var start = _.scrollLeft
+      var start = _.opt.dir * _.ele.scrollLeft
 
-      var end = _.scrollLeft + _.containerWidth
+      var end = _.opt.dir * _.ele.scrollLeft + _.containerWidth
 
       var itemStart = _.itemWidth * index
 
@@ -492,10 +497,9 @@
     var _ = this
     if (_.mouseDown) {
       _.isDrag = true
-       _.scrollLeft +=
+       _.ele.scrollLeft += _.opt.dir *
         (_.mouseDown - e.clientX) * (_.opt.dragVelocity || 3.3)
       _.mouseDown = e.clientX
-      _.ele.scrollLeft = _.opt.dir * _.scrollLeft
     }
   }
 
